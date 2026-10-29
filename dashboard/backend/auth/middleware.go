@@ -463,6 +463,8 @@ func requiresAuthentication(path string) bool {
 	switch {
 	case strings.HasPrefix(path, "/api/auth/login"):
 		return false
+	case strings.HasPrefix(path, "/api/auth/auto-login"):
+		return false
 	case strings.HasPrefix(path, "/api/auth/logout"):
 		return false
 	case strings.HasPrefix(path, "/api/auth/bootstrap/"):

@@ -84,6 +84,37 @@ const LoginPage: React.FC = () => {
     navigate(buildAuthTransitionPath(target), { replace: true })
   }
 
+  const handleAutoLogin = async () => {
+    setError('')
+    setPending(true)
+    try {
+      const response = await fetch('/api/auth/auto-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      if (response.ok) {
+        const payload = (await response.json()) as {
+          token: string
+          user?: { id: string; email: string; name: string; role?: string }
+        }
+        setSession(payload.token, payload.user ?? null)
+        await navigateAfterAuth()
+        return
+      }
+    } catch {
+      // 忽略自动登录错误
+    } finally {
+      setPending(false)
+    }
+  }
+
+  useEffect(() => {
+    // 本地免密直通：无需手动输入账号密码，自动进入工作区
+    if (!isAuthenticated) {
+      void handleAutoLogin()
+    }
+  }, [isAuthenticated])
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -403,6 +434,32 @@ const LoginPage: React.FC = () => {
             <p className={authStyles.stageEyebrow}>Account access</p>
             <h2 className={authStyles.stageTitle}>Sign in</h2>
             <p className={authStyles.stageDescription}>Continue to your workspace.</p>
+          </div>
+
+          <div style={{ marginBottom: '16px' }}>
+            <button
+              type="button"
+              className={authStyles.primaryButton}
+              style={{
+                width: '100%',
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                color: '#fff',
+                fontWeight: 600,
+                border: 'none',
+                padding: '12px 16px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                fontSize: '14px',
+              }}
+              disabled={pending || isLoading}
+              onClick={() => void handleAutoLogin()}
+            >
+              {pending ? '正在直通工作区...' : '🚀 免密直接进入工作区（无需输入）'}
+            </button>
           </div>
 
           <div className={authStyles.inputBlock}>

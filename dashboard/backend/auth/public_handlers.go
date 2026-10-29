@@ -163,6 +163,16 @@ func meHandler(svc *Service) http.HandlerFunc {
 
 		ac, ok := AuthFromContext(r)
 		if !ok {
+			adminUser, err := svc.GetOrCreateDefaultAdmin(r.Context())
+			if err == nil && adminUser != nil {
+				token, tokenErr := svc.issueTokenForContext(r.Context(), adminUser)
+				if tokenErr == nil {
+					setSessionCookies(w, r, svc, token)
+					perms, _ := svc.store.GetEffectivePermissions(r.Context(), adminUser.Role, adminUser.ID)
+					respondJSON(w, map[string]any{"user": cloneSessionUser(adminUser, perms)})
+					return
+				}
+			}
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -174,5 +184,30 @@ func meHandler(svc *Service) http.HandlerFunc {
 		}
 
 		respondJSON(w, map[string]any{"user": cloneSessionUser(user, ac.Perms)})
+	}
+}
+
+func autoLoginHandler(svc *Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		adminUser, err := svc.GetOrCreateDefaultAdmin(r.Context())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		token, err := svc.issueTokenForContext(r.Context(), adminUser)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		perms, err := svc.store.GetEffectivePermissions(r.Context(), adminUser.Role, adminUser.ID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		setSessionCookies(w, r, svc, token)
+		respondJSON(w, LoginResponse{Token: token, User: cloneSessionUser(adminUser, perms)})
 	}
 }

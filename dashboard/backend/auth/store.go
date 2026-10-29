@@ -262,3 +262,8 @@ func (s *Store) UpdateLoginTime(ctx context.Context, userID string) error {
 }
 
 func nowUnix() int64 { return time.Now().Unix() }
+
+func (s *Store) GetFirstAdminUser(ctx context.Context) (*User, error) {
+	row := s.db.QueryRowContext(ctx, "SELECT id, email, name, role, status, created_at, updated_at, last_login_at FROM users WHERE role = 'admin' AND status = 'active' ORDER BY created_at ASC LIMIT 1")
+	return scanUser(row)
+}

@@ -304,3 +304,15 @@ func defaultAdminName(name string) string {
 	}
 	return "Admin"
 }
+
+func (s *Service) GetOrCreateDefaultAdmin(ctx context.Context) (*User, error) {
+	user, err := s.store.GetFirstAdminUser(ctx)
+	if err == nil && user != nil {
+		return user, nil
+	}
+	hash, err := s.HashPassword("admin123456")
+	if err != nil {
+		return nil, err
+	}
+	return s.store.CreateUser(ctx, "admin@vllm.local", "Local Admin", hash, "admin", "active")
+}

@@ -1,5 +1,6 @@
 import React, { Suspense, lazy } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import {
   DASHBOARD_COLOR_BENDS_MOTION,
   DASHBOARD_MOTION_COLORS,
@@ -11,6 +12,11 @@ import styles from './LandingPage.module.css'
 const ColorBends = lazy(() => import('../components/ColorBends'))
 
 const LandingPage: React.FC = () => {
+  const { isAuthenticated } = useAuth()
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />
+  }
+
   return (
     <div className={styles.container}>
       <div className={styles.backgroundEffect} data-testid="landing-motion-background">
